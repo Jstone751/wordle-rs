@@ -1,4 +1,4 @@
-use clap::{Arg, ArgAction, Command};
+use clap::{Arg, ArgAction, ArgMatches, Command};
 use colored::Colorize;
 use dialoguer::Input;
 use reqwest::blocking::Client;
@@ -42,8 +42,8 @@ fn get_wordle_answer_from_api() -> String {
     }
 }
 
-fn main() {
-    let matches = Command::new("Wordle")
+fn create_wordle_command_matches() -> clap::ArgMatches {
+    Command::new("Wordle")
         .arg(
             Arg::new("no-color")
                 .short('n')
@@ -52,19 +52,12 @@ fn main() {
                 .action(ArgAction::SetTrue),
         )
         .about("A wordle clone written in rust")
-        .arg(
-            Arg::new("begin")
-                .default_value("true")
-                .short('b')
-                .help("Begins the game")
-                .action(ArgAction::SetTrue),
-        )
-        .get_matches();
-    let no_color = matches.get_flag("no-color");
-    if !matches.get_flag("begin") {
-        panic!("Please begin the game!")
-    }
+        .get_matches()
+}
+
+fn interact_with_user(matches: &ArgMatches) {
     let answer = get_wordle_answer_from_api();
+    let no_color = matches.get_flag("no-color");
     let mut tries: i32 = 0;
     for _ in 0..6 {
         let guess = Input::<String>::new()
@@ -77,7 +70,7 @@ fn main() {
                     Ok(())
                 }
             })
-            .with_prompt("Guess a five letter word")
+            .with_prompt("Guess the five letter word")
             .interact_text()
             .unwrap();
         if no_color {
@@ -94,11 +87,15 @@ fn main() {
         }
         if tries == 6 {
             println!(
-                "{}{}",
+                "{} The word was {}",
                 "You lose!".red().bold(),
-                format!(" The word was {}", answer.bold().underline()).as_str()
+                answer.bold().underline()
             );
-            break;
         }
     }
+}
+
+fn main() {
+    let matches = create_wordle_command_matches();
+    interact_with_user(&matches);
 }
